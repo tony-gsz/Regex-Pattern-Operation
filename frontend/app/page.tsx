@@ -149,7 +149,13 @@ export default function HomePage() {
       const data = await res.json();
       if (typeof data?.regex === "string") {
         setRegex(data.regex);
-        setMessage(`Suggested by ${data.source} (confidence ${data.confidence ?? "?"}) — ${data.explanation || ""}`);
+        const isLLM = data?.source && data.source !== "template";
+        if (isLLM && typeof data?.replacement === "string" && data.replacement) {
+          setReplacement(data.replacement);
+        }
+        setMessage(
+          `Suggested by ${data.source} (confidence ${data.confidence ?? "?"}) — ${data.explanation || ""}`
+        );
       } else {
         setMessage("No suggestion received.");
       }
@@ -200,7 +206,9 @@ export default function HomePage() {
         {/* LLM-> regex: show after user uploaded (has columns) */}
         {Array.isArray(columns) && columns.length > 0 && (
           <div className="rounded-xl border border-gray-200 bg-gray-100 p-4 space-y-2">
-            <label className="text-sm font-medium">Describe what to find (natural language):</label>
+            <label className="text-sm font-medium">Describe what to find (natural language supported):</label>
+            <br></br>
+            <span className="text-sm font-medium">NOTE: For best preformance, please add a quoatation mark to replacement word when using NL. eg. 'Masked'</span>
             <textarea
               className="w-full border rounded p-2 bg-white"
               rows={3}
