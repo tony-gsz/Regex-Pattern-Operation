@@ -1,190 +1,3 @@
-// "use client";
-// import { useState } from "react";
-// // backend api
-// const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000/api";
-
-// // File type
-// type UploadFile = {
-//   file_token: string;
-//   columns: string[];
-//   dataPreview: Record<string, any>[];
-// };
-
-// export default function HomePage() {
-
-//   const [fileToken, setFileToken] = useState<string>("");
-//   const [columns, setColumns] = useState<string[]>([]);
-//   // preview data returned by backend
-//   const [preview, setPreview] = useState<any[]>([]);
-//   const [selectedCol, setSelectedCol] = useState<string>("");
-//   const [regex, setRegex] = useState<string>("");
-//   const [replacement, setReplacement] = useState<string>("");
-//   const [loading, setLoading] = useState<boolean>(false);
-//   const [message, setMessage] = useState<string>("");
-
-//   async function handleUpload(file: File) {
-//     // upload to backend
-//     setLoading(true); setMessage("");
-//     const form = new FormData();
-//     form.append("file", file);
-
-//     try {
-//       const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: form });
-//       if (!res.ok) throw new Error(await res.text());
-//       const data: UploadFile = await res.json();
-//       setFileToken(data.file_token);
-//       setColumns(data.columns);
-//       setPreview(data.dataPreview);
-//       setSelectedCol(data.columns[0] || "");
-//       setMessage("Upload success!");
-//     } catch (e: any) {
-//       setMessage(e?.message || "Upload failed");
-//     } finally {
-//       setLoading(false);
-//     }
-//   }
-
-//   async function handlePreview() {
-//     // only replace n columns for preview
-//     setLoading(true); setMessage("");
-//     try {
-//       const res = await fetch(`${API_BASE}/preview`, {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           file_token: fileToken,
-//           column: selectedCol,
-//           regex,
-//           replacement
-//         }),
-//       });
-//       if (!res.ok) throw new Error(await res.text());
-//       // { preview_after: [...] }
-//       const data = await res.json();
-//       setPreview(data.preview_after || []);
-//       setMessage("Preview updated.");
-//     } catch (e: any) {
-//       setMessage(e?.message || "Preview failed");
-//     } finally {
-//       setLoading(false);
-//     }
-//   }
-
-
-//   async function handleConversion() {
-//     // Replace all columns and return downlaod link
-//     setLoading(true); setMessage("");
-//     try {
-//       const res = await fetch(`${API_BASE}/conversion`, {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           file_token: fileToken,
-//           column: selectedCol,
-//           regex,
-//           replacement
-//         }),
-//       });
-
-//       if (!res.ok) throw new Error(await res.text());
-//       // { download_url: "xxx/result.csv" }
-//       const data = await res.json();
-//       setMessage(`Done. Download: ${data.download_url}`);
-//     } catch (e: any) {
-//       setMessage(e?.message || "Conversion failed");
-//     } finally {
-//       setLoading(false);
-//     }
-//   }
-
-//   return (
-//     <main className="min-h-screen p-6 bg-gray-50">
-//       <div className="mx-auto max-w-3xl space-y-6">
-//         <h1 className="text-2xl font-bold">Regex Pattern Matching and Replacement</h1>
-
-//         <div className="rounded-xl border bg-white p-4">
-//           <input
-//             type="file"
-//             accept=".csv,.xlsx"
-//             onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
-//           />
-//           {fileToken && (
-//             <div className="mt-3 text-sm text-gray-600">file_token: {fileToken}</div>
-//           )}
-//         </div>
-
-//         {columns.length > 0 && (
-//           <div className="rounded-xl border bg-white p-4 space-y-3">
-//             <div className="flex flex-wrap gap-3 items-center">
-//               <label className="text-sm">Column:</label>
-//               <select
-//                 value={selectedCol}
-//                 onChange={(e) => setSelectedCol(e.target.value)}
-//                 className="border rounded px-2 py-1"
-//               >
-//                 {columns.map((c) => <option key={c} value={c}>{c}</option>)}
-//               </select>
-
-//               <input
-//                 className="border rounded px-2 py-1 flex-1"
-//                 placeholder="regex (e.g. \\d{3}-\\d{3}-\\d{4})"
-//                 value={regex}
-//                 onChange={(e) => setRegex(e.target.value)}
-//               />
-//               <input
-//                 className="border rounded px-2 py-1"
-//                 placeholder="replacement (e.g. REDACTED)"
-//                 value={replacement}
-//                 onChange={(e) => setReplacement(e.target.value)}
-//               />
-//               <button
-//                 onClick={handlePreview}
-//                 className="rounded bg-black text-white px-3 py-1"
-//                 disabled={loading || !fileToken || !selectedCol || !regex}
-//               >
-//                 Preview
-//               </button>
-//               <button
-//                 onClick={handleConversion}
-//                 className="rounded bg-green-600 text-white px-3 py-1"
-//                 disabled={loading || !fileToken || !selectedCol || !regex}
-//               >
-//                 Convert
-//               </button>
-//             </div>
-
-//             <div className="text-sm text-gray-500">{loading ? "Working..." : message}</div>
-//           </div>
-//         )}
-
-//         {preview.length > 0 && (
-//           <div className="rounded-xl border bg-white p-4 overflow-auto">
-//             <table className="min-w-full text-sm">
-//               <thead>
-//                 <tr>
-//                   {Object.keys(preview[0]).map((k) => (
-//                     <th key={k} className="border-b px-2 py-1 text-left">{k}</th>
-//                   ))}
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {preview.map((row, i) => (
-//                   <tr key={i}>
-//                     {Object.keys(preview[0]).map((k) => (
-//                       <td key={k} className="border-b px-2 py-1">{String(row[k])}</td>
-//                     ))}
-//                   </tr>
-//                 ))}
-//               </tbody>
-//             </table>
-//           </div>
-//         )}
-//       </div>
-//     </main>
-//   );
-// }
-
-
 "use client";
 import { useState } from "react";
 
@@ -201,6 +14,7 @@ type UploadResp = {
 
 export default function HomePage() {
   const [fileToken, setFileToken] = useState<string>("");
+  const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [columns, setColumns] = useState<string[]>([]);
   const [preview, setPreview] = useState<Record<string, unknown>[]>([]);
   const [selectedCol, setSelectedCol] = useState<string>("");
@@ -208,6 +22,7 @@ export default function HomePage() {
   const [replacement, setReplacement] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
+  // relative download path from backend
   const [downloadUrl, setDownloadUrl] = useState<string>("");
   // Natrual Lang instruction
   const [nlInstruction, setNlInstruction] = useState<string>("");
@@ -222,6 +37,8 @@ export default function HomePage() {
   async function handleUpload(file: File) {
     setLoading(true);
     setMessage("");
+    setUploadedFileName(file.name);
+
     const form = new FormData();
     form.append("file", file);
 
@@ -240,6 +57,8 @@ export default function HomePage() {
       // if there is a row name then use row in pos 1, otherwise empty
       setSelectedCol(nextCols.length > 0 ? nextCols[0] : "");
       setMessage("Upload success.");
+      // clear any previous download link
+      setDownloadUrl("");
       console.log("[upload] received:", data);
     } catch (e: any) {
       setMessage(e?.message || "Upload failed");
@@ -264,7 +83,6 @@ export default function HomePage() {
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      // —— 同样防御：如果后端没给 preview_after，就用 [] —— //
       const after = Array.isArray(data?.preview_after) ? data.preview_after : [];
       setPreview(after);
       setMessage("Preview updated.");
@@ -276,7 +94,8 @@ export default function HomePage() {
   }
 
   async function handleCommit() {
-    setLoading(true); setMessage("");
+    setLoading(true);
+    setMessage("");
     try {
       const res = await fetch(`${API_BASE}/conversion`, {
         method: "POST",
@@ -288,16 +107,15 @@ export default function HomePage() {
 
       const url = typeof data?.download_url === "string" ? data.download_url : "";
       setDownloadUrl(url);
-
       setMessage(`Done. Download: ${url}`);
     } catch (e: any) {
-      setMessage(e?.message || "Commit failed");
+      setMessage(e?.message || "Conversion failed");
     } finally {
       setLoading(false);
     }
   }
 
-  // use backend llm
+  // use backend llm/template
   async function handleSuggest() {
     setSuggesting(true);
     setMessage("");
@@ -325,7 +143,7 @@ export default function HomePage() {
     }
   }
 
-  // read row 0 only if it is non empty
+  // Table headers: only compute when we actually have preview data
   const headerKeys: string[] =
     Array.isArray(preview) && preview.length > 0
       ? Object.keys(preview[0] ?? {})
@@ -334,59 +152,69 @@ export default function HomePage() {
   return (
     <main className="min-h-screen p-6 bg-gray-50">
       <div className="mx-auto max-w-3xl space-y-6">
-        <h1 className="text-2xl font-bold">Regex Pattern Tool (Student Edition)</h1>
+        {/* Centered title */}
+        <h1 className="text-2xl font-bold text-center">Regex Pattern Matching and Replacement</h1>
 
-        {/* 上传卡片 */}
-        <div className="rounded-xl border bg-white p-4">
-          <input
-            type="file"
-            accept=".csv,.xlsx"
-            onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
-          />
+        {/* Upload block*/}
+        <div className="rounded-xl border border-gray-200 bg-gray-100 p-4">
+          <div>
+            <input
+              type="file"
+              accept=".csv,.xlsx"
+              onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
+            />
+          </div>
+          {/* filename */}
+          {uploadedFileName && (
+            <div className="mt-2 text-sm text-gray-700">Selected file: {uploadedFileName}</div>
+          )}
+          {/* info appears after upload */}
           {fileToken ? (
             <div className="mt-3 text-sm text-gray-600 space-y-1">
               <div>file_token: {fileToken}</div>
               {Array.isArray(columns) && columns.length > 0 && (
                 <div>columns: {columns.join(", ")}</div>
               )}
-              <div>Preview rows: {Array.isArray(preview) ? preview.length : 0}</div>
+              <div>preview rows: {Array.isArray(preview) ? preview.length : 0}</div>
             </div>
           ) : null}
         </div>
 
-        {/* ====== 自然语言转正则（新增）====== */}
-        <div className="rounded-xl border bg-white p-4 space-y-2">
-          <label className="text-sm font-medium">Describe what to find (natural language):</label>
-          <textarea
-            className="w-full border rounded p-2"
-            rows={3}
-            placeholder='e.g. "Find all emails" or "Mask phone numbers"'
-            value={nlInstruction}
-            onChange={(e) => setNlInstruction(e.target.value)}
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={handleSuggest}
-              className="rounded bg-blue-600 text-white px-3 py-1"
-              disabled={suggesting || !nlInstruction}
-            >
-              {suggesting ? "Suggesting..." : "Suggest regex"}
-            </button>
-            <span className="text-xs text-gray-500 self-center">
-              Tip: select a Column first for better suggestions.
-            </span>
-          </div>
-        </div>
-
-        {/* 规则输入区（只有 columns 有值才显示） */}
+        {/* LLM-> regex: show after user uploaded (has columns) */}
         {Array.isArray(columns) && columns.length > 0 && (
-          <div className="rounded-xl border bg-white p-4 space-y-3">
+          <div className="rounded-xl border border-gray-200 bg-gray-100 p-4 space-y-2">
+            <label className="text-sm font-medium">Describe what to find (natural language):</label>
+            <textarea
+              className="w-full border rounded p-2 bg-white"
+              rows={3}
+              placeholder='e.g. "Find all emails" or "Mask phone numbers"'
+              value={nlInstruction}
+              onChange={(e) => setNlInstruction(e.target.value)}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleSuggest}
+                className="rounded bg-blue-600 text-white px-3 py-1"
+                disabled={suggesting || !nlInstruction}
+              >
+                {suggesting ? "Suggesting..." : "Suggest regex"}
+              </button>
+              <span className="text-xs text-gray-500 self-center">
+                Tip: select a Column first for better suggestions.
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Rule inputs + actions */}
+        {Array.isArray(columns) && columns.length > 0 && (
+          <div className="rounded-xl border border-gray-200 bg-gray-100 p-4 space-y-3">
             <div className="flex flex-wrap items-center gap-3">
               <label className="text-sm">Column:</label>
               <select
                 value={selectedCol}
                 onChange={(e) => setSelectedCol(e.target.value)}
-                className="border rounded px-2 py-1"
+                className="border rounded px-2 py-1 bg-white"
               >
                 {(columns ?? []).map((c) => (
                   <option key={c} value={c}>
@@ -396,13 +224,13 @@ export default function HomePage() {
               </select>
 
               <input
-                className="border rounded px-2 py-1 flex-1"
-                placeholder="regex (e.g. ^.*$ to replace whole cell)"
+                className="border rounded px-2 py-1 flex-1 bg-white"
+                placeholder="regex (e.g. ^.*$ to replace the whole cell)"
                 value={regex}
                 onChange={(e) => setRegex(e.target.value)}
               />
               <input
-                className="border rounded px-2 py-1"
+                className="border rounded px-2 py-1 bg-white"
                 placeholder="replacement (e.g. REDACTED)"
                 value={replacement}
                 onChange={(e) => setReplacement(e.target.value)}
@@ -420,14 +248,14 @@ export default function HomePage() {
                 className="rounded bg-green-600 text-white px-3 py-1"
                 disabled={loading || !fileToken || !selectedCol || !regex}
               >
-                Commit
+                Convert & Download
               </button>
             </div>
 
-            {/* 状态提示 */}
+            {/* status */}
             <div className="text-sm text-gray-500">{loading ? "Working..." : message}</div>
 
-            {/* === 下载按钮：只有 commit 成功后（有 downloadUrl）才显示 === */}
+            {/* download button only after successful conversion */}
             {downloadUrl && (
               <div className="mt-3">
                 <a
@@ -444,10 +272,10 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* 预览表格 */}
+        {/* Preview table */}
         {headerKeys.length > 0 && Array.isArray(preview) && preview.length > 0 && (
-          <div className="rounded-xl border bg-white p-4 overflow-auto">
-            <table className="min-w-full text-sm">
+          <div className="rounded-xl border border-gray-200 bg-gray-100 p-4 overflow-auto">
+            <table className="min-w-full text-sm bg-white">
               <thead>
                 <tr>
                   {headerKeys.map((k) => (
