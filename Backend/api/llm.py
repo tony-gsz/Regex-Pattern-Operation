@@ -2,18 +2,16 @@
 from __future__ import annotations
 import os, json, re
 from typing import Dict, Any, Optional
+#For ollama
+import requests 
 
-import requests  # 第三方 HTTP 客户端，用来探测/调用本地 Ollama
-# 自创变量 DEBUG_LLM：调试开关；设为 "1" 则在后端终端打印调试日志
 DEBUG_LLM: bool = os.getenv("DEBUG_LLM") == "1"
 
 def _log(msg: str) -> None:
     if DEBUG_LLM:
         print(f"[LLM] {msg}")
 
-# ---------------------------
-# 内置模板（离线可用，零依赖）
-# ---------------------------
+# Template when no llm avaliable
 TEMPLATES: Dict[str, Dict[str, Any]] = {
     "email": {
         "regex": r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
@@ -22,8 +20,8 @@ TEMPLATES: Dict[str, Dict[str, Any]] = {
     },
     "phone": {
         "regex": r"\b(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}\b",
-        "explanation": "US-like phone numbers (basic, flexible separators)",
-        "confidence": 0.7,
+        "explanation": "AU-like phone numbers",
+        "confidence": 0.6,
     },
     "date": {
         "regex": r"\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4})\b",
@@ -42,18 +40,13 @@ TEMPLATES: Dict[str, Dict[str, Any]] = {
     },
     "digits only": {
         "regex": r"^\d+$",
-        "explanation": "Cell is all digits",
+        "explanation": "For those cell which only contains digits",
         "confidence": 0.8,
     },
     "ip": {
         "regex": r"\b(?:\d{1,3}\.){3}\d{1,3}\b",
-        "explanation": "IPv4 (not range-validated)",
+        "explanation": "IPv4",
         "confidence": 0.6,
-    },
-    "us zip": {
-        "regex": r"\b\d{5}(?:-\d{4})?\b",
-        "explanation": "US ZIP code 12345 or 12345-6789",
-        "confidence": 0.8,
     },
     "everything": {
         "regex": r"^.*$",
@@ -63,9 +56,9 @@ TEMPLATES: Dict[str, Dict[str, Any]] = {
 }
 
 def _template_suggest(instruction: str) -> Dict[str, Any]:
-    """模板回退：简单关键词匹配，给出一个稳妥的建议。"""
+    # If no llm, then use the hard-coded templates
     text = (instruction or "").lower()
-    order = ["email", "phone", "date", "url", "digits only", "number", "ip", "us zip", "everything"]
+    order = ["email", "phone", "date", "url", "digits only", "number", "ip", "everything"]
     for key in order:
         if key in text:
             out = TEMPLATES[key].copy()
@@ -75,9 +68,7 @@ def _template_suggest(instruction: str) -> Dict[str, Any]:
     out["source"] = "template"
     return out
 
-# ---------------------------
-# 工具：从自由文本里尽量提取第一段 JSON（便于多模型统一解析）
-# ---------------------------
+
 def _normalize_llm_json(s: str) -> Optional[Dict[str, Any]]:
     m = re.search(r"\{.*\}", s, re.S)
     if not m:
@@ -87,20 +78,14 @@ def _normalize_llm_json(s: str) -> Optional[Dict[str, Any]]:
     except Exception:
         return None
 
-# ---------------------------
-# Ollama（本地免费的 LLM）自动探测与调用
-# ---------------------------
-# 自创常量 OLLAMA_BASE：默认本地服务地址；不需要用户配置
+
+# 1st try: if there is local llm (ollama is used here)
 OLLAMA_BASE: str = "http://localhost:11434"
 
 def _has_ollama() -> bool:
-    """
-    自创函数：自动探测本地是否已启动 Ollama。
-    原理：请求 /api/version（或 /api/tags）看看是否 200。
-    """
     try:
         url = f"{OLLAMA_BASE.rstrip('/')}/api/version"
-        r = requests.get(url, timeout=1.2)
+        r = requests.get(url, timeout=1.5)
         _log(f"Probe Ollama {url} -> {r.status_code}")
         return r.ok
     except Exception as e:
@@ -108,15 +93,10 @@ def _has_ollama() -> bool:
         return False
 
 def _ollama_suggest(instruction: str, column: str | None) -> Optional[Dict[str, Any]]:
-    """
-    自创函数：调用 Ollama 的 /api/generate（单次、非流式）。
-    模型默认使用 'llama3.1:8b'；如未拉取模型，用户需先运行：
-      ollama pull llama3.1:8b
-    """
     try:
         url = f"{OLLAMA_BASE.rstrip('/')}/api/generate"
         payload = {
-            "model": "llama3.1:8b",         # 自创变量：默认轻量免费本地模型
+            "model": "llama3.1:8b",
             "prompt": _prompt(instruction, column),
             "stream": False
         }
@@ -137,33 +117,23 @@ def _ollama_suggest(instruction: str, column: str | None) -> Optional[Dict[str, 
         _log(f"Ollama exception: {repr(e)}")
     return None
 
-# ---------------------------
-# OpenAI（需 Key；余额不足会捕获并回退）
-# ---------------------------
+# 2nd try: if there is openai subs
 def _openai_client():
-    """
-    自创函数：若检测到 OPENAI_API_KEY 则返回 client，否则返回 None。
-    不要求用户写任何额外环境变量；没有 Key 就直接跳过。
-    """
     key = os.getenv("OPENAI_API_KEY") or ""
     if not key:
         _log("OPENAI_API_KEY missing")
         return None
     try:
-        from openai import OpenAI  # 延迟导入，避免无包时报错
+        from openai import OpenAI
         return OpenAI(api_key=key)
     except Exception as e:
         _log(f"OpenAI import/init failed: {repr(e)}")
         return None
 
 def _openai_suggest(client, instruction: str, column: str | None) -> Optional[Dict[str, Any]]:
-    """
-    自创函数：调用 OpenAI Chat Completions 一次。
-    - 若 429/insufficient_quota：被上层捕获，回退模板/其它分支。
-    """
     try:
         resp = client.chat.completions.create(
-            model="gpt-4o-mini",  # 如不可用可改为 "gpt-4o" 或你账号允许的模型
+            model="gpt-4o",
             messages=[{"role": "user", "content": _prompt(instruction, column)}],
             temperature=0.2,
         )
@@ -181,13 +151,8 @@ def _openai_suggest(client, instruction: str, column: str | None) -> Optional[Di
         _log(f"OpenAI exception: {repr(e)}")
     return None
 
-# ---------------------------
-# 统一提示词 / Prompt
-# ---------------------------
+# llm Prompt
 def _prompt(instruction: str, column: str | None) -> str:
-    """
-    自创函数 prompt：指导 LLM 输出 JSON，包含 regex/explanation/confidence。
-    """
     return f"""
 You write regex patterns for pandas.str.replace (Python).
 User instruction: {instruction!r}
@@ -202,21 +167,15 @@ Example:
 {{"regex":"\\\\d+","explanation":"digits","confidence":0.8}}
 """.strip()
 
-# ---------------------------
-# 对外入口：按优先级选择引擎
-# ---------------------------
+# output model
 def suggest_regex(instruction: str, column: str | None = None) -> Dict[str, Any]:
-    """
-    入口逻辑（无需用户设任何环境变量）：
-    1) 如果本地探测到 Ollama，就用 Ollama；
-    2) 否则若检测到 OPENAI_API_KEY，则调用 OpenAI；
-       - 如果出现 429/余额不足或其他异常，则回退；
-    3) 否则回退到模板。
-    始终保证返回 {regex, explanation, confidence, source}。
-    """
+    # logic: 
+    # 1. check local: if local llm, then use local llm
+    # 2. Check if there is Open AI Sub
+    # 3. Use local template if nothing above 
     _log("== suggest_regex start ==")
 
-    # 1) 优先尝试本地 Ollama（免费）
+    # 1. ollama
     if _has_ollama():
         res = _ollama_suggest(instruction, column)
         if res:
@@ -224,7 +183,7 @@ def suggest_regex(instruction: str, column: str | None = None) -> Dict[str, Any]
             return res
         _log("Ollama failed, falling back")
 
-    # 2) 再尝试 OpenAI（需要 OPENAI_API_KEY；余额不足会抛错并被捕获）
+    # 2. openai
     client = _openai_client()
     if client is not None:
         res = _openai_suggest(client, instruction, column)
@@ -233,6 +192,6 @@ def suggest_regex(instruction: str, column: str | None = None) -> Dict[str, Any]
             return res
         _log("OpenAI failed or insufficient quota, falling back")
 
-    # 3) 最后回退模板（离线兜底）
+    # template
     _log("Using template fallback")
     return _template_suggest(instruction)

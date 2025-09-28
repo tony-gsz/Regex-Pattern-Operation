@@ -14,18 +14,16 @@ from django.views.decorators.csrf import csrf_exempt
 
 # Project base directory to build tmp paths.
 BASE_DIR: Path = settings.BASE_DIR
-
-# Tmp folder to store uploads/results; create if missing.
 TMP_DIR: Path = BASE_DIR / "tmp"
 TMP_DIR.mkdir(parents=True, exist_ok=True)
 
-# In-memory map from token to file path
 FILE_STORE: dict[str, str] = {}
 
-# Keep preview responses light.
+# preview responses at most 20
 PREVIEW_ROWS: int = 20
-
+# declare data format incase it fails 
 SUPPORT_ENCODING_FORMAT = ["utf-8", "utf-8-sig", "cp1252", "latin1", "gb18030"]
+
 # load a file into a DataFrame.
 def _read_dataframe(path: str) -> pd.DataFrame:
 
@@ -59,7 +57,7 @@ def upload(request):
     token = uuid.uuid4().hex
     ext = ".xlsx" if f.name.lower().endswith(".xlsx") else ".csv"
 
-	# put tg
+	# put everythign tg
     raw_path = TMP_DIR / f"{token}{ext}"
     with open(raw_path, "wb") as out:
         for chunk in f.chunks():
@@ -78,7 +76,6 @@ def upload(request):
     return JsonResponse(
         {"file_token": token, "columns": columns, "preview": preview}
     )
-
 
 @csrf_exempt
 def preview(request):
@@ -164,7 +161,6 @@ def conversion(request):
     download_url = f"/api/files/{token}/result.csv"
     return JsonResponse({"download_url": download_url})
 
-
 def download(request, token: str):
     result_path = TMP_DIR / "results" / f"{token}-result.csv"
     if not result_path.exists():
@@ -177,10 +173,6 @@ def download(request, token: str):
 
 @csrf_exempt
 def suggest(request):
-    """
-    入参: { "instruction": "...", "column": "optional" }
-    出参: { "regex": "...", "explanation": "...", "confidence": 0.8, "source": "template|openai" }
-    """
     if request.method != "POST":
         return HttpResponseBadRequest("POST only")
 

@@ -188,18 +188,18 @@
 "use client";
 import { useState } from "react";
 
+// backend api
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000/api";
-// 自创常量：后端基础地址，来自 .env.local；没设走本地 8000
 
+// File type
 type UploadResp = {
-  file_token?: string;                 // 改为可选，避免后端异常时炸
-  columns?: string[];                  // 改为可选
-  preview?: Record<string, unknown>[]; // 改为可选
+  file_token?: string;
+  columns?: string[];
+  preview?: Record<string, unknown>[];
 };
 
-export default function Home() {
-  // 状态初始化都给“最安全”的默认值
+export default function HomePage() {
   const [fileToken, setFileToken] = useState<string>("");
   const [columns, setColumns] = useState<string[]>([]);
   const [preview, setPreview] = useState<Record<string, unknown>[]>([]);
@@ -209,14 +209,12 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
   const [downloadUrl, setDownloadUrl] = useState<string>("");
-  // ====== 在状态区新增两个状态（放在其他 useState 附近）======
+  // Natrual Lang instruction
   const [nlInstruction, setNlInstruction] = useState<string>("");
-  // 自创变量 nlInstruction：用户自然语言指令
+  // llm suggesting
   const [suggesting, setSuggesting] = useState<boolean>(false);
-  // 自创变量 suggesting：正在调用 /suggest 的 loading
 
   function toAbsDownloadUrl(relative: string): string {
-    // 再拼上后端返回的相对路径 /api/files/...
     const backendOrigin = API_BASE.replace(/\/api\/?$/, "");
     return `${backendOrigin}${relative}`;
   }
@@ -232,7 +230,6 @@ export default function Home() {
       if (!res.ok) throw new Error(await res.text());
       const data: UploadResp = await res.json();
 
-      // —— 保守赋值：任何字段拿不到都给默认空值 —— //
       const nextToken = typeof data.file_token === "string" ? data.file_token : "";
       const nextCols = Array.isArray(data.columns) ? data.columns : [];
       const nextPreview = Array.isArray(data.preview) ? data.preview : [];
@@ -240,10 +237,10 @@ export default function Home() {
       setFileToken(nextToken);
       setColumns(nextCols);
       setPreview(nextPreview);
-      // 如果有列名就默认选第一列，否则置空
+      // if there is a row name then use row in pos 1, otherwise empty
       setSelectedCol(nextCols.length > 0 ? nextCols[0] : "");
       setMessage("Upload success.");
-      console.log("[upload] received:", data); // 调试：看一眼实际结构
+      console.log("[upload] received:", data);
     } catch (e: any) {
       setMessage(e?.message || "Upload failed");
     } finally {
@@ -300,7 +297,7 @@ export default function Home() {
     }
   }
 
-  // ====== 新增函数：调用后端 /api/suggest ======
+  // use backend llm
   async function handleSuggest() {
     setSuggesting(true);
     setMessage("");
@@ -309,12 +306,14 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ instruction: nlInstruction, column: selectedCol }),
-        // 自创入参 instruction/column：告诉后端我们要匹配哪一列、想做什么
+
       });
       if (!res.ok) throw new Error(await res.text());
-      const data = await res.json(); // 期望 { regex, explanation, confidence, source }
+
+      // { regex, explanation, confidence, source }
+      const data = await res.json();
       if (typeof data?.regex === "string") {
-        setRegex(data.regex); // 关键：把建议的正则写回到 regex 输入框
+        setRegex(data.regex);
         setMessage(`Suggested by ${data.source} (confidence ${data.confidence ?? "?"}) — ${data.explanation || ""}`);
       } else {
         setMessage("No suggestion received.");
@@ -326,11 +325,11 @@ export default function Home() {
     }
   }
 
-  // —— 计算表头 keys：只有在 preview 是“非空数组”时才读取第 0 行 —— //
+  // read row 0 only if it is non empty
   const headerKeys: string[] =
     Array.isArray(preview) && preview.length > 0
       ? Object.keys(preview[0] ?? {})
-      : []; // 自创变量 headerKeys：当前预览表头字段名列表
+      : [];
 
   return (
     <main className="min-h-screen p-6 bg-gray-50">

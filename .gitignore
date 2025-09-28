@@ -1,18 +1,13 @@
-# ========== OS / Editors ==========
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
 *.swp
 *.swo
-
-# ========== Logs ==========
 *.log
 npm-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-
-# ========== Python / Django ==========
 venv/
 .env
 .env.*
@@ -24,16 +19,10 @@ __pycache__/
 *.egg
 .Python
 db.sqlite3
-
-# Django static/media (we don't commit generated assets)
 staticfiles/
 media/
-
-# Project temp files (our app writes uploads/results here)
 tmp/
 tmp/**
-
-# ========== Node / Next.js (frontend) ==========
 frontend/node_modules/
 frontend/.next/
 frontend/out/
@@ -41,17 +30,10 @@ frontend/.turbo/
 frontend/coverage/
 frontend/.env.local
 frontend/.env*.local
-
-# Optional local dev artifacts
 frontend/.vercel/
 frontend/.cache/
-
-# ========== Build artifacts (generic) ==========
 dist/
 build/
 coverage/
 *.coverage
 *.cache
-
-# ========== Misc ==========
-# macOS Finder metadata already covered by .DS_Store above
