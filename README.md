@@ -107,5 +107,3 @@ It falls back to template suggestions (emails, phone numbers, dates, urls, digit
 - Digits: \d+
 - Word boundary name “Tony”: \bTony\b
 - Keep first letter, mask rest: ([A-Za-z])[A-Za-z]+ → \1***
-
-### Thats all, thank you for your consideration and patience :)
