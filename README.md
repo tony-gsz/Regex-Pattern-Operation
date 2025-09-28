@@ -25,6 +25,7 @@ This is a tiny demo that lets you:
 
 
 ## Demo Video
+View raw and download would be ideal - video too big for preview.
 <p align="center">
   <img src="Demo.mp4" width="750"><br>
 </p>
