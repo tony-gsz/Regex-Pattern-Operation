@@ -1,95 +1,57 @@
-# === Python / Django ===
+# ========== OS / Editors ==========
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ========== Logs ==========
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ========== Python / Django ==========
 venv/
 .env
 .env.*
-*.py[cod]
-__pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.so
+__pycache__/
 *.egg-info/
-.dist-info/
-.mypy_cache/
-.pytype/
-.pytest_cache/
-.coverage
-coverage.xml
-htmlcov/
-
-# SQLite / local DBs & temp data
-*.sqlite3
-*.db
-*.sqlite
+*.egg
+.Python
 db.sqlite3
-/tmp/
-/temp/
-/cache/
 
-# Django collected/static/media (adjust if you actually want to commit assets)
+# Django static/media (we don't commit generated assets)
 staticfiles/
-static/
 media/
 
-# === Node / React / Next.js (for when we add the frontend) ===
-node_modules/
-.npm/
-.pnpm-store/
-.yarn/
-.next/
-.out/
+# Project temp files (our app writes uploads/results here)
+tmp/
+tmp/**
+
+# ========== Node / Next.js (frontend) ==========
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+frontend/coverage/
+frontend/.env.local
+frontend/.env*.local
+
+# Optional local dev artifacts
+frontend/.vercel/
+frontend/.cache/
+
+# ========== Build artifacts (generic) ==========
 dist/
 build/
-# Vite / Turbopack / misc
-.vite/
-.turbo/
-.vercel/
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+coverage/
+*.coverage
+*.cache
 
-# === Editors / OS junk ===
-.vscode/
-.idea/
-*.iml
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# === Logs ===
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# === Test artifacts ===
-junit.xml
-test-results/
-reports/
-
-# === Project-specific (sample data, exports) ===
-/data/*
-!/data/.gitkeep
-/exports/*
-!/exports/.gitkeep
-
-# === Docker (if added later) ===
-*.pid
-*.seed
-*.pid.lock
-.env.docker
-docker-compose.override.yml
-
-# === Terraform (if added later) ===
-*.tfstate
-*.tfstate.*
-.terraform/
-.terraform.lock.hcl
-crash.log
-
-# === Mac/Linux temporary files ===
-*.swp
-*.swo
-*~
+# ========== Misc ==========
+# macOS Finder metadata already covered by .DS_Store above

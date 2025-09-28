@@ -1,5 +1,5 @@
 from django.shortcuts import render
-
+from .llm import suggest_regex
 # Create your views here.
 import os
 import uuid
@@ -173,3 +173,26 @@ def download(request, token: str):
     return FileResponse(
         open(result_path, "rb"), as_attachment=True, filename="result.csv"
     )
+
+
+@csrf_exempt
+def suggest(request):
+    """
+    入参: { "instruction": "...", "column": "optional" }
+    出参: { "regex": "...", "explanation": "...", "confidence": 0.8, "source": "template|openai" }
+    """
+    if request.method != "POST":
+        return HttpResponseBadRequest("POST only")
+
+    try:
+        body = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return HttpResponseBadRequest("invalid json")
+
+    instruction = body.get("instruction", "")
+    column = body.get("column")
+    if not instruction:
+        return HttpResponseBadRequest("missing instruction")
+
+    result = suggest_regex(instruction, column)
+    return JsonResponse(result)

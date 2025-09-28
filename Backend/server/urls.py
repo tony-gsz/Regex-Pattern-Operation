@@ -25,4 +25,5 @@ urlpatterns = [
     path("api/preview", views.preview),
     path("api/conversion", views.conversion),
     path("api/files/<str:token>/result.csv", views.download), 
+    path("api/suggest", views.suggest),
 ]

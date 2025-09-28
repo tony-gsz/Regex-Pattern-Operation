@@ -208,6 +208,18 @@ export default function Home() {
   const [replacement, setReplacement] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
+  const [downloadUrl, setDownloadUrl] = useState<string>("");
+  // ====== 在状态区新增两个状态（放在其他 useState 附近）======
+  const [nlInstruction, setNlInstruction] = useState<string>("");
+  // 自创变量 nlInstruction：用户自然语言指令
+  const [suggesting, setSuggesting] = useState<boolean>(false);
+  // 自创变量 suggesting：正在调用 /suggest 的 loading
+
+  function toAbsDownloadUrl(relative: string): string {
+    // 再拼上后端返回的相对路径 /api/files/...
+    const backendOrigin = API_BASE.replace(/\/api\/?$/, "");
+    return `${backendOrigin}${relative}`;
+  }
 
   async function handleUpload(file: File) {
     setLoading(true);
@@ -267,8 +279,7 @@ export default function Home() {
   }
 
   async function handleCommit() {
-    setLoading(true);
-    setMessage("");
+    setLoading(true); setMessage("");
     try {
       const res = await fetch(`${API_BASE}/conversion`, {
         method: "POST",
@@ -277,11 +288,41 @@ export default function Home() {
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      setMessage(`Done. Download: ${data?.download_url ?? ""}`);
+
+      const url = typeof data?.download_url === "string" ? data.download_url : "";
+      setDownloadUrl(url);
+
+      setMessage(`Done. Download: ${url}`);
     } catch (e: any) {
       setMessage(e?.message || "Commit failed");
     } finally {
       setLoading(false);
+    }
+  }
+
+  // ====== 新增函数：调用后端 /api/suggest ======
+  async function handleSuggest() {
+    setSuggesting(true);
+    setMessage("");
+    try {
+      const res = await fetch(`${API_BASE}/suggest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction: nlInstruction, column: selectedCol }),
+        // 自创入参 instruction/column：告诉后端我们要匹配哪一列、想做什么
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json(); // 期望 { regex, explanation, confidence, source }
+      if (typeof data?.regex === "string") {
+        setRegex(data.regex); // 关键：把建议的正则写回到 regex 输入框
+        setMessage(`Suggested by ${data.source} (confidence ${data.confidence ?? "?"}) — ${data.explanation || ""}`);
+      } else {
+        setMessage("No suggestion received.");
+      }
+    } catch (e: any) {
+      setMessage(e?.message || "Suggest failed");
+    } finally {
+      setSuggesting(false);
     }
   }
 
@@ -296,13 +337,13 @@ export default function Home() {
       <div className="mx-auto max-w-3xl space-y-6">
         <h1 className="text-2xl font-bold">Regex Pattern Tool (Student Edition)</h1>
 
+        {/* 上传卡片 */}
         <div className="rounded-xl border bg-white p-4">
           <input
             type="file"
             accept=".csv,.xlsx"
             onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
           />
-          {/* columns 安全显示：没有就不渲染 */}
           {fileToken ? (
             <div className="mt-3 text-sm text-gray-600 space-y-1">
               <div>file_token: {fileToken}</div>
@@ -314,10 +355,34 @@ export default function Home() {
           ) : null}
         </div>
 
-        {/* 只有当 columns 是非空数组时，才渲染这块 UI */}
+        {/* ====== 自然语言转正则（新增）====== */}
+        <div className="rounded-xl border bg-white p-4 space-y-2">
+          <label className="text-sm font-medium">Describe what to find (natural language):</label>
+          <textarea
+            className="w-full border rounded p-2"
+            rows={3}
+            placeholder='e.g. "Find all emails" or "Mask phone numbers"'
+            value={nlInstruction}
+            onChange={(e) => setNlInstruction(e.target.value)}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleSuggest}
+              className="rounded bg-blue-600 text-white px-3 py-1"
+              disabled={suggesting || !nlInstruction}
+            >
+              {suggesting ? "Suggesting..." : "Suggest regex"}
+            </button>
+            <span className="text-xs text-gray-500 self-center">
+              Tip: select a Column first for better suggestions.
+            </span>
+          </div>
+        </div>
+
+        {/* 规则输入区（只有 columns 有值才显示） */}
         {Array.isArray(columns) && columns.length > 0 && (
           <div className="rounded-xl border bg-white p-4 space-y-3">
-            <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex flex-wrap items-center gap-3">
               <label className="text-sm">Column:</label>
               <select
                 value={selectedCol}
@@ -333,7 +398,7 @@ export default function Home() {
 
               <input
                 className="border rounded px-2 py-1 flex-1"
-                placeholder="regex (e.g. \\d{3}-\\d{3}-\\d{4})"
+                placeholder="regex (e.g. ^.*$ to replace whole cell)"
                 value={regex}
                 onChange={(e) => setRegex(e.target.value)}
               />
@@ -343,6 +408,7 @@ export default function Home() {
                 value={replacement}
                 onChange={(e) => setReplacement(e.target.value)}
               />
+
               <button
                 onClick={handlePreview}
                 className="rounded bg-black text-white px-3 py-1"
@@ -355,15 +421,31 @@ export default function Home() {
                 className="rounded bg-green-600 text-white px-3 py-1"
                 disabled={loading || !fileToken || !selectedCol || !regex}
               >
-                Conversion
+                Commit
               </button>
             </div>
 
+            {/* 状态提示 */}
             <div className="text-sm text-gray-500">{loading ? "Working..." : message}</div>
+
+            {/* === 下载按钮：只有 commit 成功后（有 downloadUrl）才显示 === */}
+            {downloadUrl && (
+              <div className="mt-3">
+                <a
+                  href={toAbsDownloadUrl(downloadUrl)}
+                  download
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-white hover:opacity-90"
+                >
+                  Download result.csv
+                </a>
+              </div>
+            )}
           </div>
         )}
 
-        {/* 表格渲染也加保护：只有有 headerKeys 时才渲染 */}
+        {/* 预览表格 */}
         {headerKeys.length > 0 && Array.isArray(preview) && preview.length > 0 && (
           <div className="rounded-xl border bg-white p-4 overflow-auto">
             <table className="min-w-full text-sm">
@@ -381,7 +463,7 @@ export default function Home() {
                   <tr key={i}>
                     {headerKeys.map((k) => (
                       <td key={k} className="border-b px-2 py-1">
-                        {String((row as any)?.[k] ?? "") /* 空值安全转字符串 */}
+                        {String((row as any)?.[k] ?? "")}
                       </td>
                     ))}
                   </tr>

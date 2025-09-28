@@ -3,6 +3,13 @@
 import os
 import sys
 
+# ↓↓↓ 新增三行：让 .env 生效 ↓↓↓
+try:
+    from dotenv import load_dotenv  # 自创导入：从 .env 文件加载环境变量
+    load_dotenv()
+except Exception:
+    pass
+# ↑↑↑ 新增结束 ↑↑↑
 
 def main():
     """Run administrative tasks."""
