@@ -13,13 +13,15 @@ This is a tiny demo that lets you:
 ## Table of contents
 1. [Overview](#overview)
 2. [Demo Video](#demo-video)
-3. [Overview](#overview)
-4. [Overview](#overview)
-5. [Overview](#overview)
-6. [Overview](#overview)
-7. [Overview](#overview)
-8. [Overview](#overview)
-9. [Overview](#overview)
+3. [Features](#Features)
+4. [NL Selection logic](#NL-Selection-logic)
+5. [Tech Stack](#Tech-Stack)
+6. [Setup](#Setup)
+	- [Backend Django](#Backend-Django)
+	- [Frontend React](#Frontend-React)
+	- [Optional: LLM Engines](#Optional:-LLM-Engines)
+7. [Common Prompt when Use](#Common-Prompt-when-Use)
+8. [Common Regex when Use](#Common-Regex-when-Use)
 
 
 ## Demo Video
@@ -106,4 +108,4 @@ It falls back to template suggestions (emails, phone numbers, dates, urls, digit
 - Word boundary name “Tony”: \bTony\b
 - Keep first letter, mask rest: ([A-Za-z])[A-Za-z]+ → \1***
 
-## Thank you for your patience
+### Thats all, thank you for your consideration and patience :)
