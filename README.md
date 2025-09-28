@@ -19,14 +19,14 @@ This is a tiny demo that lets you:
 6. [Setup](#Setup)
 	- [Backend Django](#Backend-Django)
 	- [Frontend React](#Frontend-React)
-	- [Optional: LLM Engines](#Optional:-LLM-Engines)
+	- [Optional LLM Engines](#Optional-LLM-Engines)
 7. [Common Prompt when Use](#Common-Prompt-when-Use)
 8. [Common Regex when Use](#Common-Regex-when-Use)
 
 
 ## Demo Video
 <p align="center">
-  <img src="Images/G&M_1.jpg" width="750"><br>
+  <img src="Demo.mp4" width="750"><br>
 </p>
 
 
@@ -76,7 +76,7 @@ npm run dev
 ```
 Frontend is now on http://localhost:3000/.
 
-### Optional: LLM Engines
+### Optional LLM Engines
 - Ollama (Preferred) 
 ```bash
 ollama pull llama3.1:8b
