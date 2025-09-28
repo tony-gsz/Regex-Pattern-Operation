@@ -19,7 +19,7 @@ TEMPLATES: Dict[str, Dict[str, Any]] = {
         "confidence": 0.9,
     },
     "phone": {
-        "regex": r"\b(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}\b",
+        "regex": r"\b(?:\+?61[-\s]?4\d{2}[-\s]?\d{3}[-\s]?\d{3}|04\d{2}[-\s]?\d{3}[-\s]?\d{3})\b",
         "explanation": "AU-like phone numbers",
         "confidence": 0.6,
     },
@@ -155,7 +155,7 @@ def _openai_suggest(client, instruction: str, column: str | None) -> Optional[Di
 def _prompt(instruction: str, column: str | None) -> str:
     return f"""
 You write regex patterns for pandas.str.replace (Python).
-User instruction: {instruction!r}
+User instruction: {'find' + instruction!r}
 Target column (optional): {column!r}
 
 Rules:

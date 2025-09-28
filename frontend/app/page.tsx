@@ -17,6 +17,7 @@ export default function HomePage() {
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [columns, setColumns] = useState<string[]>([]);
   const [preview, setPreview] = useState<Record<string, unknown>[]>([]);
+  const [originalPreview, setOriginalPreview] = useState<Record<string, unknown>[]>([]);
   const [selectedCol, setSelectedCol] = useState<string>("");
   const [regex, setRegex] = useState<string>("");
   const [replacement, setReplacement] = useState<string>("");
@@ -29,9 +30,19 @@ export default function HomePage() {
   // llm suggesting
   const [suggesting, setSuggesting] = useState<boolean>(false);
 
+
   function toAbsDownloadUrl(relative: string): string {
     const backendOrigin = API_BASE.replace(/\/api\/?$/, "");
     return `${backendOrigin}${relative}`;
+  }
+
+  function resetPreview() {
+    if (Array.isArray(originalPreview) && originalPreview.length > 0) {
+      setPreview(originalPreview);
+      setMessage("Preview reset to original file.");
+    } else {
+      setMessage("Nothing to reset.");
+    }
   }
 
   async function handleUpload(file: File) {
@@ -54,6 +65,7 @@ export default function HomePage() {
       setFileToken(nextToken);
       setColumns(nextCols);
       setPreview(nextPreview);
+      setOriginalPreview(nextPreview);
       // if there is a row name then use row in pos 1, otherwise empty
       setSelectedCol(nextCols.length > 0 ? nextCols[0] : "");
       setMessage("Upload success.");
@@ -119,6 +131,11 @@ export default function HomePage() {
   async function handleSuggest() {
     setSuggesting(true);
     setMessage("");
+
+    // Auto-reset preview to the original
+    if (originalPreview.length > 0) {
+      setPreview(originalPreview);
+    }
     try {
       const res = await fetch(`${API_BASE}/suggest`, {
         method: "POST",
@@ -225,13 +242,13 @@ export default function HomePage() {
 
               <input
                 className="border rounded px-2 py-1 flex-1 bg-white"
-                placeholder="regex (e.g. ^.*$ to replace the whole cell)"
+                placeholder="regex (e.g. ^.*$ for the entire cell)"
                 value={regex}
                 onChange={(e) => setRegex(e.target.value)}
               />
               <input
                 className="border rounded px-2 py-1 bg-white"
-                placeholder="replacement (e.g. REDACTED)"
+                placeholder="replace (e.g. REDACTED)"
                 value={replacement}
                 onChange={(e) => setReplacement(e.target.value)}
               />
@@ -244,11 +261,18 @@ export default function HomePage() {
                 Preview
               </button>
               <button
+                onClick={resetPreview}
+                className="rounded bg-gray-600 text-white px-3 py-1"
+                disabled={!fileToken || originalPreview.length === 0}
+              >
+                Reset Preview
+              </button>
+              <button
                 onClick={handleCommit}
                 className="rounded bg-green-600 text-white px-3 py-1"
                 disabled={loading || !fileToken || !selectedCol || !regex}
               >
-                Convert & Download
+                Convert
               </button>
             </div>
 
